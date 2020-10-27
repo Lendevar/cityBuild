@@ -97,7 +97,7 @@ __meta__ = {
 }
 layer_index = 0
 texture = ExtResource( 14 )
-view_distance = 200.0
+view_distance = 400.0
 custom_shader = null
 density = 1.0
 instance_mesh = null
@@ -183,6 +183,15 @@ margin_top = 10.0
 margin_right = 25.0
 margin_bottom = 30.0
 text = "+"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="lblNeighbours" type="Label" parent="gameController/playerController/pnlRoad"]
+margin_left = 41.2504
+margin_top = 12.0664
+margin_right = 81.2504
+margin_bottom = 26.0664
 __meta__ = {
 "_edit_use_anchors_": false
 }

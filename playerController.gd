@@ -46,14 +46,11 @@ func _ready():
 	cursorNode = MeshInstance.new()
 	cursorNode.mesh = SphereMesh.new()
 	
-	
 	$roadNodes.add_child(cursorNode)
 	
 	###############
 	
 	rayTerrain = RayCast.new()
-	
-	
 	
 	$roadNodes.add_child(rayTerrain)
 	
@@ -67,17 +64,16 @@ func _ready():
 	
 	rayTerrain.add_child(IwantToSee)
 	
-	
 	pass
-
 
 func nodeHasBeenClicked(id):
 	
 	$pnlRoad.show()
 	currentlyDrawingFrom = id
 	
-
-
+	$pnlRoad/lblNeighbours.text = "node " + str(arrayRoadNodes[id])
+	$pnlRoad/lblNeighbours.text += "\r\nneighb " + str(arrayRoadNodes[id].neighbourNodes)
+	
 
 ############### Turning ray to the click position
 
@@ -93,16 +89,13 @@ func _input(event):
 		
 		$lever.look_at(to, Vector3(0,-1,0))
 		
-		
 	
 
 
 var collPoint = Vector3()
 var collObj
 
-
 ####### Getting collision point and object
-
 
 func getLmbCollider():
 	
@@ -145,6 +138,13 @@ var arrayCurrentlyDrawing = []
 var mouseMoved
 var mousePos
 
+class MyCustomSorter:
+	static func sort_ascending(a, b):
+		if a[0] < b[0]:
+			return true
+		return false
+
+
 func drawingRoad():
 	
 	if mousePos != get_viewport().get_mouse_position():
@@ -186,7 +186,6 @@ func drawingRoad():
 				
 				var newMesh = MeshInstance.new()
 				newMesh.mesh = SphereMesh.new()
-				
 				
 				arrayCurrentlyDrawing += [newMesh]
 				$roadNodes.add_child(arrayCurrentlyDrawing.back())
@@ -234,18 +233,32 @@ func drawingRoad():
 			
 			var arrayRoad = []
 			
+			########## Since we're constantly adding and removing currentlyDrawing nodes
+			########## Ids of them are messed up
+			########## So I want to recalculate id's 
+			########## Based on their distance to the start
+			##########(0 is the closest from start -> last is to the end)
+			
 			for i in range(0, arrayCurrentlyDrawing.size()):
 				
-				arrayRoad += [arrayCurrentlyDrawing[i].global_transform.origin]
+				var startNodePos = arrayRoadNodes[currentlyDrawingFrom].nodeBody.global_transform.origin
+				var distance = arrayCurrentlyDrawing[i].global_transform.origin.distance_to(startNodePos)
 				
+				arrayRoad += [[distance, arrayCurrentlyDrawing[i].global_transform.origin]]
 			
-			arrayRoad += [roadEnd]
+			############# Using custom sorting
+			
+			arrayRoad.sort_custom(MyCustomSorter, "sort_ascending")
+			
+			############ Then we leave only the positions of nodes
+			
+			for i in range(0, arrayCurrentlyDrawing.size()):
+				
+				arrayRoad[i] = arrayRoad[i][1]
+				
 			
 			requestRoadBuild(arrayRoad)
 			
-			#print(arrayRoad)
-	
-	
 	
 	mousePos = get_viewport().get_mouse_position()
 	
@@ -253,50 +266,51 @@ func drawingRoad():
 
 ########################## This thing should probably be requested from server
 
+var previousNode
 
 func requestRoadBuild(roadArray):
-	
-	
 	if roadArray.size() != 0:
-		
-		var firstNode = roadNode.new()
-		firstNode.nodeBody = singleRoadNode.instance()
-		firstNode.neighbourNodes += [arrayRoadNodes[currentlyDrawingFrom]]
-		
-		arrayRoadNodes += [firstNode]
-		
-		$roadNodes.add_child(firstNode.nodeBody)
-		firstNode.nodeBody.global_transform.origin = roadArray[0]
-		
-		if roadArray.size() > 1:
-			
-			for i in range(1, roadArray.size()):
+		for i in range(0, roadArray.size()):
+			if i == 0:
+				
+				var firstNode = roadNode.new()
+				firstNode.nodeBody = singleRoadNode.instance()
+				firstNode.neighbourNodes += [arrayRoadNodes[currentlyDrawingFrom]]
+				arrayRoadNodes[currentlyDrawingFrom].neighbourNodes += [firstNode]
+				
+				arrayRoadNodes += [firstNode]
+				
+				previousNode = firstNode
+				
+				$roadNodes.add_child(firstNode.nodeBody)
+				firstNode.nodeBody.global_transform.origin = roadArray[0]
+				
+			else:
 				
 				var newNode = roadNode.new()
-				
 				newNode.nodeBody = singleRoadNode.instance()
-				newNode.neighbourNodes += [arrayRoadNodes[i-1]]
+				
+				newNode.neighbourNodes += [previousNode]
+				previousNode.neighbourNodes += [newNode]
 				
 				arrayRoadNodes += [newNode]
+				
+				previousNode = newNode
 				
 				$roadNodes.add_child(newNode.nodeBody)
 				newNode.nodeBody.global_transform.origin = roadArray[i]
 				
-				pass
+			
+		
 	
 	buildMode = false
-	currentlyDrawingFrom = -1
 	
 	for i in range(0, arrayCurrentlyDrawing.size()):
 		
-		arrayCurrentlyDrawing[i].hide()
+		$roadNodes.remove_child(arrayCurrentlyDrawing[i])
 		
 	
-	pass
-
-
-
-
+	arrayCurrentlyDrawing.clear()
 
 func _physics_process(delta):
 	
@@ -304,11 +318,9 @@ func _physics_process(delta):
 	
 	drawingRoad()
 
-
 func _on_btnAddRoad_button_up():
 	
 	buildMode = true
 	
 	print(currentlyDrawingFrom)
-	
-	pass 
+
