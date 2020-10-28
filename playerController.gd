@@ -1,5 +1,6 @@
 extends Spatial
 
+signal arrayRoadsChanged(whatHappened, whichNodes)
 
 export (int) var ray_length = 1000
 
@@ -22,6 +23,8 @@ class roadNode:
 
 var buildMode = false
 var currentlyDrawingFrom = 0
+
+var removeMode = false
 
 ####################
 
@@ -63,19 +66,30 @@ func _ready():
 	IwantToSee.mesh = CubeMesh.new()
 	
 	rayTerrain.add_child(IwantToSee)
-	
-	pass
 
 func nodeHasBeenClicked(id):
 	
 	$pnlRoad.show()
-	currentlyDrawingFrom = id
 	
 	$pnlRoad/lblNeighbours.text = "node " + str(arrayRoadNodes[id])
 	$pnlRoad/lblNeighbours.text += "\r\nneighb " + str(arrayRoadNodes[id].neighbourNodes)
 	
+	if buildMode != true:
+		currentlyDrawingFrom = id
+	
+	if removeMode == true:
+		print("removing ", arrayRoadNodes[id])
+		
+		########## Removal might be requested from the server in future multiplayer version
+		if currentlyDrawingFrom != 0:
+			requestNodeRemoval(arrayRoadNodes[id])
+			
+			currentlyDrawingFrom = 0
+		
+	
 
-############### Turning ray to the click position
+
+############### Turning ray rotation to the click position
 
 func _input(event):
 	
@@ -90,7 +104,6 @@ func _input(event):
 		$lever.look_at(to, Vector3(0,-1,0))
 		
 	
-
 
 var collPoint = Vector3()
 var collObj
@@ -121,7 +134,7 @@ func processClick(pos, obj):
 		if obj == arrayRoadNodes[i].nodeBody:
 			
 			nodeHasBeenClicked(i)
-			
+			break
 		
 	
 
@@ -143,6 +156,40 @@ class MyCustomSorter:
 		if a[0] < b[0]:
 			return true
 		return false
+
+func fillNewRoadArray():
+	
+	var arrayRoad = []
+	
+	########## Since we're constantly adding and removing currentlyDrawing nodes
+	########## Ids of them are messed up
+	########## So I want to recalculate id's 
+	########## Based on their distance to the start
+	##########(0 is the closest from start -> last is to the end)
+	
+	for i in range(0, arrayCurrentlyDrawing.size()):
+		
+		var startNodePos = arrayRoadNodes[currentlyDrawingFrom].nodeBody.global_transform.origin
+		var distance = arrayCurrentlyDrawing[i].global_transform.origin.distance_to(startNodePos)
+		
+		arrayRoad += [[distance, arrayCurrentlyDrawing[i].global_transform.origin]]
+	
+	############# Using custom sorting
+	
+	arrayRoad.sort_custom(MyCustomSorter, "sort_ascending")
+	
+	############ Then we leave only the positions of nodes
+	
+	for i in range(0, arrayCurrentlyDrawing.size()):
+		
+		arrayRoad[i] = arrayRoad[i][1]
+		
+	
+	return arrayRoad
+
+
+
+
 
 
 func drawingRoad():
@@ -228,41 +275,38 @@ func drawingRoad():
 		cursorNode.global_transform.origin = Vector3(0, -10, 0)
 		
 	
+	var storageOfTheStart = arrayRoadNodes[currentlyDrawingFrom]
+	
 	if buildMode == true:
 		if Input.is_action_just_pressed("mouse_left"):
 			
-			var arrayRoad = []
+			######### If it is a static body, we might check if it is the road Node
 			
-			########## Since we're constantly adding and removing currentlyDrawing nodes
-			########## Ids of them are messed up
-			########## So I want to recalculate id's 
-			########## Based on their distance to the start
-			##########(0 is the closest from start -> last is to the end)
+			var weConnectOrBuildNew  = "buildNew"
+			var intersection = 0
 			
-			for i in range(0, arrayCurrentlyDrawing.size()):
-				
-				var startNodePos = arrayRoadNodes[currentlyDrawingFrom].nodeBody.global_transform.origin
-				var distance = arrayCurrentlyDrawing[i].global_transform.origin.distance_to(startNodePos)
-				
-				arrayRoad += [[distance, arrayCurrentlyDrawing[i].global_transform.origin]]
-			
-			############# Using custom sorting
-			
-			arrayRoad.sort_custom(MyCustomSorter, "sort_ascending")
-			
-			############ Then we leave only the positions of nodes
-			
-			for i in range(0, arrayCurrentlyDrawing.size()):
-				
-				arrayRoad[i] = arrayRoad[i][1]
+			if $lever/RayCast.get_collider().get_class() == "StaticBody":
+				for i in range(0, arrayRoadNodes.size()):
+					if $lever/RayCast.get_collider() == arrayRoadNodes[i].nodeBody:
+						
+						weConnectOrBuildNew = "connect"
+						intersection = arrayRoadNodes[i]
+						
+						print(intersection)
+						
+					
 				
 			
-			requestRoadBuild(arrayRoad)
+			if weConnectOrBuildNew == "buildNew":
+				requestRoadBuild(fillNewRoadArray())
+			else:
+				requestRoadConnect(fillNewRoadArray(), intersection, storageOfTheStart)
 			
+		
 	
 	mousePos = get_viewport().get_mouse_position()
 	
-	
+
 
 ########################## This thing should probably be requested from server
 
@@ -285,6 +329,11 @@ func requestRoadBuild(roadArray):
 				$roadNodes.add_child(firstNode.nodeBody)
 				firstNode.nodeBody.global_transform.origin = roadArray[0]
 				
+				var nodeOnePos = arrayRoadNodes[currentlyDrawingFrom].nodeBody.global_transform.origin
+				var nodeTwoPos = firstNode.nodeBody.global_transform.origin
+				
+				emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
+				
 			else:
 				
 				var newNode = roadNode.new()
@@ -295,12 +344,24 @@ func requestRoadBuild(roadArray):
 				
 				arrayRoadNodes += [newNode]
 				
-				previousNode = newNode
-				
 				$roadNodes.add_child(newNode.nodeBody)
 				newNode.nodeBody.global_transform.origin = roadArray[i]
 				
-			
+				if i == roadArray.size() - 1:
+					
+					var nodeOnePos = previousNode.nodeBody.global_transform.origin
+					var nodeTwoPos = newNode.nodeBody.global_transform.origin
+					
+					emit_signal("arrayRoadsChanged", "newSimpleConnection", [nodeOnePos, nodeTwoPos])
+				else:
+					
+					var nodeOnePos = previousNode.nodeBody.global_transform.origin
+					var nodeTwoPos = newNode.nodeBody.global_transform.origin
+					
+					emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
+				
+				previousNode = newNode
+				
 		
 	
 	buildMode = false
@@ -312,6 +373,113 @@ func requestRoadBuild(roadArray):
 	
 	arrayCurrentlyDrawing.clear()
 
+#################################
+
+func requestRoadConnect(roadArray, intersection, start):
+	if start.neighbourNodes.find(intersection) == -1:		
+		if roadArray.size() == 1:  #### Simple connection with one road section
+			
+			start.neighbourNodes += [intersection]
+			intersection.neighbourNodes += [start]
+			
+			var nodeOnePos = start.nodeBody.global_transform.origin
+			var nodeTwoPos = intersection.nodeBody.global_transform.origin
+			
+			emit_signal("arrayRoadsChanged", "newSimpleConnection", [nodeOnePos, nodeTwoPos])
+			
+		else:
+			for i in range(0, roadArray.size()):
+				if i == 0:
+					
+					var firstNode = roadNode.new()
+					firstNode.nodeBody = singleRoadNode.instance()
+					
+					firstNode.neighbourNodes += [start]
+					start.neighbourNodes += [firstNode]
+					
+					arrayRoadNodes += [firstNode]
+					
+					var nodeOnePos = start.nodeBody.global_transform.origin
+					var nodeTwoPos = firstNode.nodeBody.global_transform.origin
+					
+					previousNode = firstNode
+					
+					$roadNodes.add_child(firstNode.nodeBody)
+					firstNode.nodeBody.global_transform.origin = roadArray[0]
+					
+					emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
+					
+				else:
+					if i != roadArray.size() - 1:
+						
+						var newNode = roadNode.new()
+						newNode.nodeBody = singleRoadNode.instance()
+						
+						newNode.neighbourNodes += [previousNode]
+						previousNode.neighbourNodes += [newNode]
+						
+						arrayRoadNodes += [newNode]
+						
+						var nodeOnePos = previousNode.nodeBody.global_transform.origin
+						var nodeTwoPos = newNode.nodeBody.global_transform.origin
+						
+						previousNode = newNode
+						
+						$roadNodes.add_child(newNode.nodeBody)
+						newNode.nodeBody.global_transform.origin = roadArray[i]
+						
+						emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
+						
+					else:   
+						
+						# we dont draw the node that sits onto the crossroad since it already exists
+						
+						previousNode.neighbourNodes += [intersection]
+						intersection.neighbourNodes += [previousNode]
+						
+						var nodeOnePos = previousNode.nodeBody.global_transform.origin
+						var nodeTwoPos = intersection.nodeBody.global_transform.origin
+						
+						emit_signal("arrayRoadsChanged", "newSimpleConnection", [previousNode, intersection])
+					
+				
+			
+		
+	else:
+		
+		print("They are already neighbours")
+		
+	
+	buildMode = false
+	
+	for i in range(0, arrayCurrentlyDrawing.size()):
+		
+		$roadNodes.remove_child(arrayCurrentlyDrawing[i])
+		
+	
+	arrayCurrentlyDrawing.clear()
+
+##############################################################
+
+func requestNodeRemoval(node):
+	
+	$roadNodes.remove_child(node.nodeBody)
+	
+	emit_signal("arrayRoadsChanged", "newRemoval", [node] + node.neighbourNodes)
+	
+	arrayRoadNodes.erase(node)
+	
+	for i in range(0, arrayRoadNodes.size()):
+		
+		if arrayRoadNodes[i].neighbourNodes.find(node) != -1:
+			
+			arrayRoadNodes[i].neighbourNodes.erase(node)
+			
+		
+	
+	pass
+
+
 func _physics_process(delta):
 	
 	getLmbCollider()
@@ -322,5 +490,22 @@ func _on_btnAddRoad_button_up():
 	
 	buildMode = true
 	
+	removeMode = false
+	
+
+	
 	print(currentlyDrawingFrom)
 
+
+
+func _on_btnRemoveNode_button_up():
+	
+	buildMode = false
+	if removeMode == false:
+		removeMode = true
+		$pnlRoad/btnRemoveNode.text = "X"
+	else:
+		removeMode = false
+		$pnlRoad/btnRemoveNode.text = "-"
+	
+	pass # Replace with function body.

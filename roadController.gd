@@ -1,43 +1,32 @@
 extends Spatial
 
-export (Array) var arrayRoadNodes
+export (PackedScene) var simpleRoad
 
-class roadNode:
-	
-	var nodeBody
-	var neighbourNodes = []
-	
+export (Array) var roadBodies
 
-var buildMode = false
-var currentlyDrawingFrom = 0
 
 func _ready():
 	
-	var firstNode = roadNode.new()
-	
-	firstNode.nodeBody = $roadNodes/roadNode
-	
-	arrayRoadNodes += [firstNode]
-	
-	pass # Replace with function body.
-
-func nodeHasBeenClicked(id):
-	
-	buildMode = true
-	currentlyDrawingFrom = id
-
-
-
-
-func _physics_process(delta):
-	
-	if buildMode = true:
-		
-		
-		pass
-	
 	
 	pass
+
+func receiveRoadChange(whatHappened, nodes):
+	
+	print(whatHappened, nodes)
+	
+	match whatHappened:
+		"newNode":
+			
+			var newRoadBody = simpleRoad.instance()
+			
+			$roadBodies.add_child(newRoadBody)
+			
+			newRoadBody.global_transform.origin = nodes[0]
+			newRoadBody.look_at(nodes[1], Vector3(0,1,0))
+			
+	
+	pass 
+
 
 
 

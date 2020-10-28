@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=2]
+[gd_scene load_steps=28 format=2]
 
 [ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=1]
 [ext_resource path="res://data.hterrain" type="Resource" id=2]
@@ -16,10 +16,12 @@
 [ext_resource path="res://textures/grassDet.png" type="Texture" id=14]
 [ext_resource path="res://textures/Grass_005_BaseColor.jpg" type="Texture" id=15]
 [ext_resource path="res://textures/Grass_005_Normal.jpg" type="Texture" id=16]
+[ext_resource path="res://roadController.gd" type="Script" id=17]
 [ext_resource path="res://playerController.gd" type="Script" id=18]
 [ext_resource path="res://roadNode.tscn" type="PackedScene" id=19]
 [ext_resource path="res://main.gd" type="Script" id=20]
 [ext_resource path="res://gameController.gd" type="Script" id=21]
+[ext_resource path="res://meshes/simpleRoad.tscn" type="PackedScene" id=22]
 
 [sub_resource type="PlaneMesh" id=1]
 
@@ -187,12 +189,31 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="lblNeighbours" type="Label" parent="gameController/playerController/pnlRoad"]
-margin_left = 41.2504
-margin_top = 12.0664
-margin_right = 81.2504
-margin_bottom = 26.0664
+[node name="btnRemoveNode" type="Button" parent="gameController/playerController/pnlRoad"]
+anchor_top = 0.269
+anchor_bottom = 0.269
+margin_left = 7.0
+margin_top = 10.0
+margin_right = 25.0
+margin_bottom = 30.0
+text = "-"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="lblNeighbours" type="Label" parent="gameController/playerController/pnlRoad"]
+margin_left = 31.0
+margin_top = 10.0
+margin_right = 164.0
+margin_bottom = 31.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="roadController" type="Spatial" parent="gameController"]
+script = ExtResource( 17 )
+simpleRoad = ExtResource( 22 )
+
+[node name="roadBodies" type="Spatial" parent="gameController/roadController"]
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnAddRoad" to="gameController/playerController" method="_on_btnAddRoad_button_up"]
+[connection signal="button_up" from="gameController/playerController/pnlRoad/btnRemoveNode" to="gameController/playerController" method="_on_btnRemoveNode_button_up"]
