@@ -69,7 +69,7 @@ func _ready():
 
 func nodeHasBeenClicked(id):
 	
-	$pnlRoad.show()
+	#$pnlRoad.show()
 	
 	$pnlRoad/lblNeighbours.text = "node " + str(arrayRoadNodes[id])
 	$pnlRoad/lblNeighbours.text += "\r\nneighb " + str(arrayRoadNodes[id].neighbourNodes)
@@ -332,6 +332,7 @@ func requestRoadBuild(roadArray):
 				var nodeOnePos = arrayRoadNodes[currentlyDrawingFrom].nodeBody.global_transform.origin
 				var nodeTwoPos = firstNode.nodeBody.global_transform.origin
 				
+				print("line 336")
 				emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 				
 			else:
@@ -352,12 +353,14 @@ func requestRoadBuild(roadArray):
 					var nodeOnePos = previousNode.nodeBody.global_transform.origin
 					var nodeTwoPos = newNode.nodeBody.global_transform.origin
 					
-					emit_signal("arrayRoadsChanged", "newSimpleConnection", [nodeOnePos, nodeTwoPos])
+					print("line 357")
+					emit_signal("arrayRoadsChanged", "withEnd", [nodeOnePos, nodeTwoPos])
 				else:
 					
 					var nodeOnePos = previousNode.nodeBody.global_transform.origin
 					var nodeTwoPos = newNode.nodeBody.global_transform.origin
 					
+					print("line 364")
 					emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 				
 				previousNode = newNode
@@ -385,7 +388,12 @@ func requestRoadConnect(roadArray, intersection, start):
 			var nodeOnePos = start.nodeBody.global_transform.origin
 			var nodeTwoPos = intersection.nodeBody.global_transform.origin
 			
-			emit_signal("arrayRoadsChanged", "newSimpleConnection", [nodeOnePos, nodeTwoPos])
+			print("line 392")
+			
+			if intersection.neighbourNodes.size() > 2:
+				emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
+			else:
+				emit_signal("arrayRoadsChanged", "withEnd", [nodeOnePos, nodeTwoPos])
 			
 		else:
 			for i in range(0, roadArray.size()):
@@ -399,14 +407,15 @@ func requestRoadConnect(roadArray, intersection, start):
 					
 					arrayRoadNodes += [firstNode]
 					
-					var nodeOnePos = start.nodeBody.global_transform.origin
-					var nodeTwoPos = firstNode.nodeBody.global_transform.origin
-					
 					previousNode = firstNode
 					
 					$roadNodes.add_child(firstNode.nodeBody)
 					firstNode.nodeBody.global_transform.origin = roadArray[0]
 					
+					var nodeOnePos = start.nodeBody.global_transform.origin
+					var nodeTwoPos = firstNode.nodeBody.global_transform.origin
+					
+					print("line 415")
 					emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 					
 				else:
@@ -420,14 +429,18 @@ func requestRoadConnect(roadArray, intersection, start):
 						
 						arrayRoadNodes += [newNode]
 						
+						$roadNodes.add_child(newNode.nodeBody)
+						
 						var nodeOnePos = previousNode.nodeBody.global_transform.origin
-						var nodeTwoPos = newNode.nodeBody.global_transform.origin
+						
 						
 						previousNode = newNode
 						
-						$roadNodes.add_child(newNode.nodeBody)
 						newNode.nodeBody.global_transform.origin = roadArray[i]
 						
+						var nodeTwoPos = newNode.nodeBody.global_transform.origin
+						
+						print("line 437")
 						emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 						
 					else:   
@@ -440,7 +453,12 @@ func requestRoadConnect(roadArray, intersection, start):
 						var nodeOnePos = previousNode.nodeBody.global_transform.origin
 						var nodeTwoPos = intersection.nodeBody.global_transform.origin
 						
-						emit_signal("arrayRoadsChanged", "newSimpleConnection", [previousNode, intersection])
+						print("line 450")
+						
+						if intersection.neighbourNodes.size() > 2:
+							emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
+						else:
+							emit_signal("arrayRoadsChanged", "withEnd", [nodeOnePos, nodeTwoPos])
 					
 				
 			
@@ -463,9 +481,19 @@ func requestRoadConnect(roadArray, intersection, start):
 
 func requestNodeRemoval(node):
 	
+	var arrayNodesPositions = []
+	
+	arrayNodesPositions += [node.nodeBody.global_transform.origin]
+	
+	emit_signal("arrayRoadsChanged", "roadEndRemoval", arrayNodesPositions)
+	
 	$roadNodes.remove_child(node.nodeBody)
 	
-	emit_signal("arrayRoadsChanged", "newRemoval", [node] + node.neighbourNodes)
+	if node.neighbourNodes.size() <= 2 and node.neighbourNodes.size() != 0:
+		arrayNodesPositions += [node.neighbourNodes[0].nodeBody.global_transform.origin]
+	
+	
+	emit_signal("arrayRoadsChanged", "newRemoval", arrayNodesPositions)
 	
 	arrayRoadNodes.erase(node)
 	
@@ -509,3 +537,19 @@ func _on_btnRemoveNode_button_up():
 		$pnlRoad/btnRemoveNode.text = "-"
 	
 	pass # Replace with function body.
+
+
+func _on_btnRoadMode_button_up():
+	if $pnlRoad.is_visible_in_tree() == false:
+		
+		$pnlRoad.show()
+		$roadNodes.show()
+		
+	else:
+		
+		buildMode = false
+		
+		$pnlRoad.hide()
+		$roadNodes.hide()
+		
+	
