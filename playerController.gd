@@ -1,6 +1,9 @@
 extends Spatial
 
 signal arrayRoadsChanged(whatHappened, whichNodes)
+signal readyToSendNodeData(arrayNodes)
+
+signal requestTestPathFind(positions)
 
 export (int) var ray_length = 1000
 
@@ -26,6 +29,7 @@ var currentlyDrawingFrom = 0
 
 var removeMode = false
 
+var testPathFindMode = false
 ####################
 
 var cursorNode
@@ -73,6 +77,12 @@ func _ready():
 	
 	rayTerrain.add_child(IwantToSee)
 
+############################
+
+var nodePositionsForTestPathFind = []
+
+############################
+
 func nodeHasBeenClicked(id):
 	
 	#$pnlRoad.show()
@@ -93,7 +103,18 @@ func nodeHasBeenClicked(id):
 			currentlyDrawingFrom = 0
 		
 	
-
+	if testPathFindMode == true:
+		
+		var pos = arrayRoadNodes[id].nodeBody.global_transform.origin 
+		
+		nodePositionsForTestPathFind += [Vector3(floor(pos.x),floor(pos.y),floor(pos.z))]
+		
+		if nodePositionsForTestPathFind.size() == 2:
+			emit_signal("requestTestPathFind", nodePositionsForTestPathFind)
+			nodePositionsForTestPathFind.clear()
+		
+		pass
+	
 
 ############### Turning ray rotation to the click position
 
@@ -181,7 +202,6 @@ func processClick(pos, obj):
 	############## Checking if it is a road body
 	
 	if isChecked == false:
-		
 		for i in range(0, importedRoadBodiesArray.size()):
 			if obj == importedRoadBodiesArray[i] and removeMode == true:
 				
@@ -432,6 +452,8 @@ func requestRoadBuild(roadArray):
 		
 	
 	arrayCurrentlyDrawing.clear()
+	
+	emit_signal("readyToSendNodeData", arrayRoadNodes)
 
 #################################
 
@@ -527,6 +549,8 @@ func requestRoadConnect(roadArray, intersection, start):
 		
 	
 	arrayCurrentlyDrawing.clear()
+	
+	emit_signal("readyToSendNodeData", arrayRoadNodes)
 
 ##############################################################
 
@@ -549,7 +573,7 @@ func requestNodeRemoval(node):
 			
 		
 	
-	pass
+	emit_signal("readyToSendNodeData", arrayRoadNodes)
 
 
 func _physics_process(delta):
@@ -565,9 +589,6 @@ func _on_btnAddRoad_button_up():
 	removeMode = false
 	
 
-	
-	print(currentlyDrawingFrom)
-
 
 
 func _on_btnRemoveNode_button_up():
@@ -581,7 +602,6 @@ func _on_btnRemoveNode_button_up():
 		$pnlRoad/btnRemoveNode.text = "-"
 	
 	pass # Replace with function body.
-
 
 func _on_btnRoadMode_button_up():
 	if $pnlRoad.is_visible_in_tree() == false:
@@ -597,3 +617,20 @@ func _on_btnRoadMode_button_up():
 		$roadNodes.hide()
 		
 	
+
+func _on_btnTestPath_button_up():
+	
+	if testPathFindMode == false:
+		testPathFindMode = true
+		buildMode = false
+		removeMode = false
+		emit_signal("readyToSendNodeData", arrayRoadNodes)
+		$pnlMode/btnTestPath.text = "Selecting"
+		
+	else:
+		testPathFindMode = false
+		nodePositionsForTestPathFind.clear()
+		
+		$pnlMode/btnTestPath.text = "Test path"
+	
+	pass 

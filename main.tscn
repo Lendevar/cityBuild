@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=2]
+[gd_scene load_steps=31 format=2]
 
 [ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=1]
 [ext_resource path="res://data.hterrain" type="Resource" id=2]
@@ -23,6 +23,8 @@
 [ext_resource path="res://gameController.gd" type="Script" id=21]
 [ext_resource path="res://meshes/simpleRoad.tscn" type="PackedScene" id=22]
 [ext_resource path="res://meshes/simpleRoadEnd.tscn" type="PackedScene" id=23]
+[ext_resource path="res://trafficController.gd" type="Script" id=24]
+[ext_resource path="res://meshes/vehicleScene.tscn" type="PackedScene" id=25]
 
 [sub_resource type="PlaneMesh" id=1]
 
@@ -232,12 +234,29 @@ margin_right = 59.5297
 margin_bottom = 44.5298
 text = "Roads"
 
+[node name="btnTestPath" type="Button" parent="gameController/playerController/pnlMode"]
+anchor_left = 0.792
+anchor_right = 0.842
+margin_left = 7.0
+margin_top = 7.0
+margin_right = 61.0
+margin_bottom = 44.0
+text = "Test path"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
 [node name="roadController" type="Spatial" parent="gameController"]
 script = ExtResource( 17 )
 simpleRoad = ExtResource( 22 )
 roadEnd = ExtResource( 23 )
 
 [node name="roadBodies" type="Spatial" parent="gameController/roadController"]
+
+[node name="trafficController" type="Spatial" parent="gameController"]
+script = ExtResource( 24 )
+testBody = ExtResource( 25 )
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnAddRoad" to="gameController/playerController" method="_on_btnAddRoad_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnRemoveNode" to="gameController/playerController" method="_on_btnRemoveNode_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlMode/btnRoadMode" to="gameController/playerController" method="_on_btnRoadMode_button_up"]
+[connection signal="button_up" from="gameController/playerController/pnlMode/btnTestPath" to="gameController/playerController" method="_on_btnTestPath_button_up"]
