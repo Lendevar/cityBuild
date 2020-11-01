@@ -32,6 +32,12 @@ var cursorNode
 var rayTerrain
 var IwantToSee
 
+####################
+
+var importedRoadBodiesArray = []
+signal requestRoadBodyRemoval
+signal requestRoadBodyEndPoint
+
 func _ready():
 	
 	ray.cast_to = Vector3(0,0, - ray_length)
@@ -122,21 +128,75 @@ func getLmbCollider():
 		processClick(collPoint, collObj)
 		
 
+func updateRoadBodiesArray(arr):
+	
+	importedRoadBodiesArray = arr
+
+func removeNeighbourByPos(nodePos, neighPos):
+	
+	var firstId = -1
+	var secondId = -1
+	
+	var flooredNode = Vector3(floor(nodePos.x), floor(nodePos.y), floor(nodePos.z))
+	var flooredNeigh = Vector3(floor(neighPos.x), floor(neighPos.y), floor(neighPos.z))
+	
+	for i in range(0, arrayRoadNodes.size()):
+		
+		var currentPos = arrayRoadNodes[i].nodeBody.global_transform.origin
+		var flooredCurrent = Vector3(floor(currentPos.x), floor(currentPos.y), floor(currentPos.z))
+		
+		if flooredCurrent == flooredNode:
+			firstId = i
+		
+		if flooredCurrent == flooredNeigh:
+			secondId = i
+		
+		if firstId != -1 and secondId != -1:
+			break
+	
+	if firstId != -1 and secondId != -1:
+		arrayRoadNodes[firstId].neighbourNodes.erase(arrayRoadNodes[secondId])
+		arrayRoadNodes[secondId].neighbourNodes.erase(arrayRoadNodes[firstId])
+		print("destroyed neighbour relation between ", arrayRoadNodes[firstId], " and ", arrayRoadNodes[secondId])
+	
 
 func processClick(pos, obj):
 	
 	#print(pos, obj)
 	
+	var isChecked = false
+	
 	################ Checking if it is a road node
 	
 	for i in range (0, arrayRoadNodes.size()):
-		
 		if obj == arrayRoadNodes[i].nodeBody:
 			
 			nodeHasBeenClicked(i)
+			
+			isChecked = true
+			
 			break
 		
 	
+	############## Checking if it is a road body
+	
+	if isChecked == false:
+		
+		for i in range(0, importedRoadBodiesArray.size()):
+			if obj == importedRoadBodiesArray[i] and removeMode == true:
+				
+				var bodyPos = importedRoadBodiesArray[i].global_transform.origin
+				var endPos = get_node(str(importedRoadBodiesArray[i].get_path()) + "/endPoint").global_transform.origin
+				
+				removeNeighbourByPos(bodyPos, endPos)
+				
+				emit_signal("requestRoadBodyRemoval", [bodyPos, endPos])
+				
+				break
+			
+		
+	
+
 
 var roadEnd = Vector3()
 var roadVector = Vector3()
@@ -332,7 +392,6 @@ func requestRoadBuild(roadArray):
 				var nodeOnePos = arrayRoadNodes[currentlyDrawingFrom].nodeBody.global_transform.origin
 				var nodeTwoPos = firstNode.nodeBody.global_transform.origin
 				
-				print("line 336")
 				emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 				
 			else:
@@ -353,14 +412,12 @@ func requestRoadBuild(roadArray):
 					var nodeOnePos = previousNode.nodeBody.global_transform.origin
 					var nodeTwoPos = newNode.nodeBody.global_transform.origin
 					
-					print("line 357")
 					emit_signal("arrayRoadsChanged", "withEnd", [nodeOnePos, nodeTwoPos])
 				else:
 					
 					var nodeOnePos = previousNode.nodeBody.global_transform.origin
 					var nodeTwoPos = newNode.nodeBody.global_transform.origin
 					
-					print("line 364")
 					emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 				
 				previousNode = newNode
@@ -388,8 +445,6 @@ func requestRoadConnect(roadArray, intersection, start):
 			var nodeOnePos = start.nodeBody.global_transform.origin
 			var nodeTwoPos = intersection.nodeBody.global_transform.origin
 			
-			print("line 392")
-			
 			if intersection.neighbourNodes.size() > 2:
 				emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 			else:
@@ -415,7 +470,6 @@ func requestRoadConnect(roadArray, intersection, start):
 					var nodeOnePos = start.nodeBody.global_transform.origin
 					var nodeTwoPos = firstNode.nodeBody.global_transform.origin
 					
-					print("line 415")
 					emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 					
 				else:
@@ -440,7 +494,6 @@ func requestRoadConnect(roadArray, intersection, start):
 						
 						var nodeTwoPos = newNode.nodeBody.global_transform.origin
 						
-						print("line 437")
 						emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
 						
 					else:   
@@ -452,8 +505,6 @@ func requestRoadConnect(roadArray, intersection, start):
 						
 						var nodeOnePos = previousNode.nodeBody.global_transform.origin
 						var nodeTwoPos = intersection.nodeBody.global_transform.origin
-						
-						print("line 450")
 						
 						if intersection.neighbourNodes.size() > 2:
 							emit_signal("arrayRoadsChanged", "newNode", [nodeOnePos, nodeTwoPos])
@@ -481,26 +532,19 @@ func requestRoadConnect(roadArray, intersection, start):
 
 func requestNodeRemoval(node):
 	
-	var arrayNodesPositions = []
+	var nodePos = node.nodeBody.global_transform.origin
 	
-	arrayNodesPositions += [node.nodeBody.global_transform.origin]
-	
-	emit_signal("arrayRoadsChanged", "roadEndRemoval", arrayNodesPositions)
+	emit_signal("arrayRoadsChanged", "roadEndRemoval", [nodePos])
+	emit_signal("arrayRoadsChanged", "newRemovalByTheEndPoint", [nodePos])
 	
 	$roadNodes.remove_child(node.nodeBody)
 	
-	if node.neighbourNodes.size() <= 2 and node.neighbourNodes.size() != 0:
-		arrayNodesPositions += [node.neighbourNodes[0].nodeBody.global_transform.origin]
-	
-	
-	emit_signal("arrayRoadsChanged", "newRemoval", arrayNodesPositions)
+	emit_signal("arrayRoadsChanged", "newRemoval", [nodePos])
 	
 	arrayRoadNodes.erase(node)
 	
 	for i in range(0, arrayRoadNodes.size()):
-		
 		if arrayRoadNodes[i].neighbourNodes.find(node) != -1:
-			
 			arrayRoadNodes[i].neighbourNodes.erase(node)
 			
 		
