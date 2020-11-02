@@ -51,18 +51,27 @@ func getImportedNodesByPositions(positions):
 		if isFound == 1:
 			break
 	
-	var pathNodes = findPath(start, target)
+	#var pathNodes = findPath(start, target)
+	
+	var pathNodes = AstarPathfind(start, target)
+	
+	print("Path found! ", pathNodes)
 	
 	var newVehicle = vehicle.new()
 	newVehicle.vehicleBody = testBody.instance()
 	
 	newVehicle.vehiclePath = Path.new()
 	
-	for i in range(0, pathNodes.size()):
+	if pathNodes.size() != 0:
+		for i in range(0, pathNodes.size()):
+			
+			newVehicle.vehiclePath.curve.add_point(pathNodes[i])
+			
 		
-		newVehicle.vehiclePath.curve.add_point(pathNodes[i].nodeBody.global_transform.origin)
-		
-		
+	else:
+		newVehicle.vehiclePath.curve.add_point(target.nodeBody.global_transform.origin)
+	
+	
 	
 	newVehicle.vehiclePathFollow = PathFollow.new()
 	newVehicle.vehiclePathFollow.loop = false
@@ -83,112 +92,31 @@ class MyCustomSorter:
 			return true
 		return false
 
-func findPath(start, target):
+func AstarPathfind(start, target):
 	
-	print("Starting pathfind")
+	var astar = AStar.new()
 	
-	var pathFound = []
+	for i in range(0, importedRoadNodes.size()):
+		astar.add_point(i, importedRoadNodes[i].nodeBody.global_transform.origin)
 	
-	var closed = []
-	
-	var g_cost = []
-	var h_cost = []
-	var f_cost = []
-	var neighbours = []
-	var roadHelper
-	
-	var roadLengthSumm = 0
-	
-	var leastFcost = PositiveInfinity
-	var nextStep
-	var previousId
-	
-	var currentObject
-	var current = start
-	
-	closed += [current]
-	
-	var iteration = 0
-	
-	pathFound += [start]
-	
-	while currentObject != target:
-		for i in range(0, current.neighbourNodes.size()):
+	for i in range(0, importedRoadNodes.size()):
+		for j in range(0, importedRoadNodes[i].neighbourNodes.size()):
 			
-			neighbours += [current.neighbourNodes[i]]
+			var neighbourPoint = importedRoadNodes.find(importedRoadNodes[i].neighbourNodes[j])
 			
-		
-		#print("current neighbours = ", neighbours)
-		
-		#neighbours = current.neighbourNodes
-		
-		for i in range(0, neighbours.size()):
-			
-			var dist = current.nodeBody.global_transform.origin.distance_to(neighbours[i].nodeBody.global_transform.origin)
-			
-			g_cost += [roadLengthSumm + dist]
-			
-			h_cost += [neighbours[i].nodeBody.global_transform.origin.distance_to(target.nodeBody.global_transform.origin)]
-			
-			f_cost += [g_cost.back() + h_cost.back()]
-		
-		var isFound = false
-		
-		for i in range(0, neighbours.size()):
-			if floor(f_cost[i]) <= floor(leastFcost) and closed.find(neighbours[i]) == -1:
-				leastFcost = f_cost[i]
-				nextStep = neighbours[i]
-				previousId = i
-				isFound = true
-		
-		
-		if isFound == false:
-			var enumeratedArray = []
-			
-			for i in range(0, neighbours.size()):
-				if closed.find(neighbours[i]) == -1:
-					#enumeratedArray = [[neighbours[i] , i]]
-					enumeratedArray = [[f_cost[i] , i]]
-				
-			
-			if enumeratedArray.size() != 0:
-				
-				enumeratedArray.sort_custom(MyCustomSorter, "sort_ascending")
-				
-				leastFcost = f_cost[enumeratedArray[0][1]]
-				nextStep = neighbours[enumeratedArray[0][1]]
-				previousId = enumeratedArray[0][1]
-			else:
-				print("Pathfinding failed on iteration ", iteration, ", trying to get path to neighbour")
-				#pathFound += [target]
-				
-				#pathFound = findPath(start, current.neighbourNodes[0])
-				pathFound += [target]
-				
-				print("Path found = ", pathFound)
-				
-				return pathFound
+			if astar.are_points_connected(i, neighbourPoint, true) == false:
+				astar.connect_points(i, neighbourPoint, true)
 			
 			
-			pass
 		
-		closed += [current]
-		current = nextStep
-		roadLengthSumm += g_cost[previousId]
-		
-		neighbours.clear()
-		g_cost.clear()
-		h_cost.clear()
-		f_cost.clear()
-		
-		currentObject = current
-		
-		pathFound += [current]
-		iteration += 1
 	
+	var startId = importedRoadNodes.find(start)
+	var targetId = importedRoadNodes.find(target)
 	
-	print("Path found = " + str(pathFound))
-	return pathFound
+	return astar.get_point_path(startId, targetId)
+
+
+
 
 func _physics_process(delta):
 	
