@@ -7,6 +7,8 @@ func _ready():
 	$playerController.connect("requestRoadBodyRemoval", $roadController, "bodyRemoval")
 	$playerController.connect("readyToSendNodeData", self, "sendNodeData")
 	$playerController.connect("requestTestPathFind", $trafficController, "getImportedNodesByPositions")
+	$playerController.connect("requestBuildingPlacement", $buildingController, "placeBuilding")
+	
 	
 	pass # Replace with function body.
 

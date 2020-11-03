@@ -71,8 +71,6 @@ func getImportedNodesByPositions(positions):
 	else:
 		newVehicle.vehiclePath.curve.add_point(target.nodeBody.global_transform.origin)
 	
-	
-	
 	newVehicle.vehiclePathFollow = PathFollow.new()
 	newVehicle.vehiclePathFollow.loop = false
 	newVehicle.vehiclePathFollow.set_rotation_mode(4)
@@ -132,9 +130,6 @@ func _physics_process(delta):
 			break
 		
 	
-	
-	
-	
-	
+
 
 

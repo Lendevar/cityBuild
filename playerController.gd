@@ -5,10 +5,13 @@ signal readyToSendNodeData(arrayNodes)
 
 signal requestTestPathFind(positions)
 
+signal requestBuildingPlacement(type, position, rot)
+
 export (int) var ray_length = 1000
 
 export onready var camera = get_node("RtsCameraController2/Elevation/Camera")
 export onready var ray = get_node("lever/RayCast")
+
 
 signal playerClicked(pos, obj)
 
@@ -30,6 +33,8 @@ var currentlyDrawingFrom = 0
 var removeMode = false
 
 var testPathFindMode = false
+
+var placingBuildingMode = false
 ####################
 
 var cursorNode
@@ -42,7 +47,35 @@ var importedRoadBodiesArray = []
 signal requestRoadBodyRemoval
 signal requestRoadBodyEndPoint
 
+
+var arrayBuildingButtons = []
+
+var arrayNodeBodiesInArea = []
+
+var materialRed
+var materialGreen
+
+export (PackedScene) var factoryPreview
+
+
 func _ready():
+	
+	materialGreen = SpatialMaterial.new()
+	materialGreen.albedo_color = Color("#00ff70")
+	materialGreen.params_blend_mode = 1
+	
+	materialRed = SpatialMaterial.new()
+	materialRed.albedo_color = Color("#b70303")
+	materialRed.params_blend_mode = 1
+	
+	$buildingAreaCursor.connect("body_entered", self, "processBodyInBuildingCursor")
+	$buildingAreaCursor.connect("body_exited", self, "processBodyLeavingCursor")
+	#############################
+	
+	arrayBuildingButtons += [$pnlBuilding/ScrollContainer/HBoxContainer/btnFactory]
+	
+	for i in range(0, arrayBuildingButtons.size()):
+		arrayBuildingButtons[i].connect("button_up", self, "startPlacingABuilding", [arrayBuildingButtons[i].text])
 	
 	ray.cast_to = Vector3(0,0, - ray_length)
 	
@@ -72,16 +105,31 @@ func _ready():
 	
 	rayTerrain.rotation_degrees.x = -90
 	
-	IwantToSee = MeshInstance.new()
-	IwantToSee.mesh = CubeMesh.new()
+	#IwantToSee = MeshInstance.new()
+	#IwantToSee.mesh = CubeMesh.new()
 	
-	rayTerrain.add_child(IwantToSee)
+	#rayTerrain.add_child(IwantToSee)
 
 ############################
 
 var nodePositionsForTestPathFind = []
 
 ############################
+
+var currentlyPlacing
+
+func startPlacingABuilding(buildingType):
+	
+	currentlyPlacing = buildingType
+	$buildingAreaCursor.show()
+	
+	placingBuildingMode = true
+	
+	match currentlyPlacing:
+			"Factory":
+				buildingPreview = factoryPreview.instance()
+				add_child(buildingPreview)
+	
 
 func nodeHasBeenClicked(id):
 	
@@ -266,6 +314,156 @@ func fillNewRoadArray():
 		
 	
 	return arrayRoad
+
+###############################################
+
+var placingPoint
+
+var mousePosBuildingMode
+var mouseMovedBuildingMode
+
+var arrayDistancesToCursor = []
+var nearestNode = null
+var nearestNodeDistance = -1
+
+var readyToPlaceABuilding = false
+
+var buildingPreview
+
+func drawBuildingCursor():
+	
+	if placingBuildingMode == true:
+		
+		if mousePosBuildingMode != get_viewport().get_mouse_position():
+			
+			mouseMovedBuildingMode = true
+			
+		else:
+			
+			mouseMovedBuildingMode = false
+			
+		
+		camera = $RtsCameraController2/Elevation/Camera
+		var from = camera.project_ray_origin(get_viewport().get_mouse_position())
+		var to = from + camera.project_ray_normal(get_viewport().get_mouse_position()) * ray_length
+		
+		$lever.global_transform.origin = camera.global_transform.origin
+		
+		$lever.look_at(to, Vector3(0,-1,0))
+		
+		placingPoint = $lever/RayCast.get_collision_point()
+		
+		if mouseMovedBuildingMode == true:
+			
+			$buildingAreaCursor.global_transform.origin = placingPoint
+			
+			if nearestNodeDistance != -1 and nearestNode != null:
+				if placingPoint.distance_to(nearestNode.global_transform.origin) > 9:
+					$buildingAreaCursor.global_transform.origin = placingPoint
+					$buildingAreaCursor/MeshInstance.set_surface_material(0, materialRed)
+					
+					readyToPlaceABuilding = false
+					
+				else:
+					$buildingAreaCursor.global_transform.origin = nearestNode.global_transform.origin
+					$buildingAreaCursor/MeshInstance.set_surface_material(0, materialGreen)
+					
+					readyToPlaceABuilding = true
+					
+			else:
+				$buildingAreaCursor.global_transform.origin = placingPoint
+				$buildingAreaCursor/MeshInstance.set_surface_material(0, materialRed)
+				
+				readyToPlaceABuilding = false
+			
+			
+			if arrayNodeBodiesInArea.size() != 0:
+				for i in range(0, arrayNodeBodiesInArea.size()):
+					
+					var currentDistance = placingPoint.distance_to(arrayNodeBodiesInArea[i].global_transform.origin)
+					
+					arrayDistancesToCursor += [[currentDistance, arrayNodeBodiesInArea[i]]]
+					
+				
+				arrayDistancesToCursor.sort_custom(MyCustomSorter, "sort_ascending")
+				
+				nearestNode = arrayDistancesToCursor[0][1]
+				nearestNodeDistance = arrayDistancesToCursor[0][0]
+			
+		
+		if readyToPlaceABuilding == true:
+			
+			buildingPreview.show()
+			
+			var previewVector = placingPoint - nearestNode.global_transform.origin
+			previewVector = previewVector / previewVector.length()
+			
+			previewVector.y = 0
+			
+			var previewPoint = nearestNode.global_transform.origin + (previewVector * 6)
+			
+			previewPoint.y += 10
+			rayTerrain.global_transform.origin = previewPoint
+			
+			buildingPreview.global_transform.origin = rayTerrain.get_collision_point()
+			buildingPreview.look_at(nearestNode.global_transform.origin, Vector3(0,1,0))
+			
+			if Input.is_action_just_released("mouse_left"):
+				
+				requestNewBuilding()
+		
+		
+		mousePosBuildingMode = get_viewport().get_mouse_position()
+		arrayDistancesToCursor.clear()
+
+
+############################################
+
+func requestNewBuilding():
+	var previewPos = buildingPreview.global_transform.origin
+	var previewRot = buildingPreview.rotation_degrees
+	
+	previewRot.z = 0
+	previewRot.x = 0
+	
+	emit_signal("requestBuildingPlacement", currentlyPlacing, previewPos, previewRot )
+	
+	var entrancePos = get_node(str(buildingPreview.get_path()) + "/entrancePoint").global_transform.origin
+	
+	var newNode = roadNode.new()
+	
+	newNode.nodeBody = singleRoadNode.instance()
+	
+	$roadNodes.add_child(newNode.nodeBody)
+	
+	newNode.nodeBody.global_transform.origin = entrancePos
+	
+	var neighbour
+	
+	for i in range(0, arrayRoadNodes.size()):
+			
+			if arrayRoadNodes[i].nodeBody == nearestNode:
+				
+				neighbour = arrayRoadNodes[i]
+				break
+			
+		
+	
+	newNode.neighbourNodes += [neighbour]
+	neighbour.neighbourNodes += [newNode]
+	
+	arrayRoadNodes += [newNode]
+	
+	emit_signal("arrayRoadsChanged", "withEnd", [neighbour.nodeBody.global_transform.origin, entrancePos])
+	
+	buildingPreview.hide()
+	placingBuildingMode = false
+	
+	$buildingAreaCursor.global_transform.origin = Vector3(0,0,0)
+
+
+
+
 
 
 
@@ -575,12 +773,31 @@ func requestNodeRemoval(node):
 	
 	emit_signal("readyToSendNodeData", arrayRoadNodes)
 
+func processBodyInBuildingCursor(body):
+	
+	if body.get_class() == "StaticBody":
+		for i in range(0, arrayRoadNodes.size()):
+			if body == arrayRoadNodes[i].nodeBody and arrayNodeBodiesInArea.find(body) == -1:
+				
+				arrayNodeBodiesInArea += [body]
+				
+			
+
+func processBodyLeavingCursor(body):
+	
+	if arrayNodeBodiesInArea.find(body) != -1:
+		arrayNodeBodiesInArea.erase(body)
+	
+
 
 func _physics_process(delta):
 	
 	getLmbCollider()
 	
 	drawingRoad()
+	
+	drawBuildingCursor()
+	
 
 func _on_btnAddRoad_button_up():
 	
@@ -608,14 +825,18 @@ func _on_btnRoadMode_button_up():
 		
 		$pnlRoad.show()
 		$roadNodes.show()
+		$pnlBuilding.hide()
 		
 	else:
 		
 		buildMode = false
+		testPathFindMode = false
+		removeMode = false
+		placingBuildingMode = false
 		
 		$pnlRoad.hide()
 		$roadNodes.hide()
-		
+		$buildingAreaCursor.hide()
 	
 
 func _on_btnTestPath_button_up():
@@ -624,6 +845,10 @@ func _on_btnTestPath_button_up():
 		testPathFindMode = true
 		buildMode = false
 		removeMode = false
+		placingBuildingMode = false
+		
+		$buildingAreaCursor.hide()
+		
 		emit_signal("readyToSendNodeData", arrayRoadNodes)
 		$pnlMode/btnTestPath.text = "Selecting"
 		
@@ -634,3 +859,22 @@ func _on_btnTestPath_button_up():
 		$pnlMode/btnTestPath.text = "Test path"
 	
 	pass 
+
+
+func _on_btnBuildingsMode_button_up():
+	
+	$pnlRoad.hide()
+	
+	buildMode = false
+	removeMode = false
+	testPathFindMode = false
+	
+	if $pnlBuilding.is_visible_in_tree() == false:
+		
+		$pnlBuilding.show()
+	else:
+		$pnlBuilding.hide()
+	
+	
+	
+	pass # Replace with function body.

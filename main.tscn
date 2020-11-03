@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=2]
+[gd_scene load_steps=37 format=2]
 
 [ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=1]
 [ext_resource path="res://data.hterrain" type="Resource" id=2]
@@ -25,6 +25,10 @@
 [ext_resource path="res://meshes/simpleRoadEnd.tscn" type="PackedScene" id=23]
 [ext_resource path="res://trafficController.gd" type="Script" id=24]
 [ext_resource path="res://meshes/vehicleScene.tscn" type="PackedScene" id=25]
+[ext_resource path="res://meshes/cursorMaterial.tres" type="Material" id=26]
+[ext_resource path="res://meshes/factoryPreview.tscn" type="PackedScene" id=27]
+[ext_resource path="res://buildingController.gd" type="Script" id=28]
+[ext_resource path="res://meshes/factory.tscn" type="PackedScene" id=29]
 
 [sub_resource type="PlaneMesh" id=1]
 
@@ -59,6 +63,12 @@ tracks/0/keys = {
 [sub_resource type="CylinderMesh" id=4]
 
 [sub_resource type="SphereMesh" id=5]
+
+[sub_resource type="CylinderShape" id=6]
+radius = 7.34635
+height = 0.692925
+
+[sub_resource type="CylinderMesh" id=7]
 
 [node name="main" type="Node"]
 script = ExtResource( 20 )
@@ -128,6 +138,7 @@ anims/water_movement = SubResource( 3 )
 [node name="playerController" type="Spatial" parent="gameController"]
 script = ExtResource( 18 )
 singleRoadNode = ExtResource( 19 )
+factoryPreview = ExtResource( 27 )
 
 [node name="RtsCameraController2" type="Spatial" parent="gameController/playerController"]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 153.977, 6.85095, 127.98 )
@@ -246,6 +257,62 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="btnBuildingsMode" type="Button" parent="gameController/playerController/pnlMode"]
+anchor_left = 0.161
+anchor_top = 0.129
+anchor_right = 0.269
+anchor_bottom = 0.473
+margin_left = -2.22829
+margin_top = -0.866142
+margin_right = 22.9797
+margin_bottom = 20.2459
+text = "Buildings"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="pnlBuilding" type="Panel" parent="gameController/playerController"]
+visible = false
+anchor_left = 0.45
+anchor_top = 0.8
+anchor_right = 0.55
+anchor_bottom = 0.8
+margin_left = -127.0
+margin_right = 168.0
+margin_bottom = 83.0
+__meta__ = {
+"_edit_use_anchors_": false,
+"_editor_description_": ""
+}
+
+[node name="ScrollContainer" type="ScrollContainer" parent="gameController/playerController/pnlBuilding"]
+margin_left = 7.0
+margin_top = 7.0
+margin_right = 418.0
+margin_bottom = 76.0
+follow_focus = true
+scroll_horizontal = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="gameController/playerController/pnlBuilding/ScrollContainer"]
+margin_right = 58.0
+margin_bottom = 20.0
+
+[node name="btnFactory" type="Button" parent="gameController/playerController/pnlBuilding/ScrollContainer/HBoxContainer"]
+margin_right = 58.0
+margin_bottom = 20.0
+text = "Factory"
+
+[node name="buildingAreaCursor" type="Area" parent="gameController/playerController"]
+
+[node name="CollisionShape" type="CollisionShape" parent="gameController/playerController/buildingAreaCursor"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.358865, 0 )
+shape = SubResource( 6 )
+
+[node name="MeshInstance" type="MeshInstance" parent="gameController/playerController/buildingAreaCursor"]
+transform = Transform( 3.15765, 0, 0, 0, 0.231034, 0, 0, 0, 3.19156, 0, 0.180204, 0 )
+mesh = SubResource( 7 )
+material/0 = ExtResource( 26 )
+
 [node name="roadController" type="Spatial" parent="gameController"]
 script = ExtResource( 17 )
 simpleRoad = ExtResource( 22 )
@@ -256,7 +323,12 @@ roadEnd = ExtResource( 23 )
 [node name="trafficController" type="Spatial" parent="gameController"]
 script = ExtResource( 24 )
 testBody = ExtResource( 25 )
+
+[node name="buildingController" type="Spatial" parent="gameController"]
+script = ExtResource( 28 )
+buildingFactory = ExtResource( 29 )
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnAddRoad" to="gameController/playerController" method="_on_btnAddRoad_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnRemoveNode" to="gameController/playerController" method="_on_btnRemoveNode_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlMode/btnRoadMode" to="gameController/playerController" method="_on_btnRoadMode_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlMode/btnTestPath" to="gameController/playerController" method="_on_btnTestPath_button_up"]
+[connection signal="button_up" from="gameController/playerController/pnlMode/btnBuildingsMode" to="gameController/playerController" method="_on_btnBuildingsMode_button_up"]
