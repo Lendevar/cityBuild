@@ -1,74 +1,33 @@
-[gd_scene load_steps=37 format=2]
+[gd_scene load_steps=23 format=2]
 
-[ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=1]
-[ext_resource path="res://data.hterrain" type="Resource" id=2]
-[ext_resource path="res://textures/Gravel014_2K_Color.jpg" type="Texture" id=3]
-[ext_resource path="res://textures/Stylized_Grass_002_basecolor.jpg" type="Texture" id=4]
-[ext_resource path="res://textures/Gravel014_2K_Normal.jpg" type="Texture" id=5]
-[ext_resource path="res://textures/Stylized_Grass_002_normal.jpg" type="Texture" id=6]
-[ext_resource path="res://textures/WaveNormal_01.png" type="Texture" id=7]
-[ext_resource path="res://textures/rock_ground_ao_1k.jpg" type="Texture" id=8]
-[ext_resource path="res://textures/rock_ground_nor_1k.jpg" type="Texture" id=9]
-[ext_resource path="res://addons/zylann.hterrain/hterrain_detail_layer.gd" type="Script" id=10]
-[ext_resource path="res://addons/zylann.hterrain/tools/icons/icon_detail_layer_node.svg" type="Texture" id=11]
-[ext_resource path="res://RtsCameraController.gd" type="Script" id=12]
-[ext_resource path="res://worldController.gd" type="Script" id=13]
-[ext_resource path="res://textures/grassDet.png" type="Texture" id=14]
-[ext_resource path="res://textures/Grass_005_BaseColor.jpg" type="Texture" id=15]
-[ext_resource path="res://textures/Grass_005_Normal.jpg" type="Texture" id=16]
-[ext_resource path="res://roadController.gd" type="Script" id=17]
-[ext_resource path="res://playerController.gd" type="Script" id=18]
-[ext_resource path="res://roadNode.tscn" type="PackedScene" id=19]
-[ext_resource path="res://main.gd" type="Script" id=20]
-[ext_resource path="res://gameController.gd" type="Script" id=21]
-[ext_resource path="res://meshes/simpleRoad.tscn" type="PackedScene" id=22]
-[ext_resource path="res://meshes/simpleRoadEnd.tscn" type="PackedScene" id=23]
-[ext_resource path="res://trafficController.gd" type="Script" id=24]
-[ext_resource path="res://meshes/vehicleScene.tscn" type="PackedScene" id=25]
+[ext_resource path="res://Server.gd" type="Script" id=1]
+[ext_resource path="res://supportScenes/residentialHousePreview.tscn" type="PackedScene" id=2]
+[ext_resource path="res://supportScenes/residentialHouse.tscn" type="PackedScene" id=3]
+[ext_resource path="res://scripts/RtsCameraController.gd" type="Script" id=12]
+[ext_resource path="res://scripts/roadController.gd" type="Script" id=17]
+[ext_resource path="res://scripts/playerController.gd" type="Script" id=18]
+[ext_resource path="res://supportScenes/roadNode.tscn" type="PackedScene" id=19]
+[ext_resource path="res://scripts/main.gd" type="Script" id=20]
+[ext_resource path="res://scripts/gameController.gd" type="Script" id=21]
+[ext_resource path="res://supportScenes/simpleRoad.tscn" type="PackedScene" id=22]
+[ext_resource path="res://supportScenes/simpleRoadEnd.tscn" type="PackedScene" id=23]
+[ext_resource path="res://scripts/trafficController.gd" type="Script" id=24]
+[ext_resource path="res://supportScenes/vehicleScene.tscn" type="PackedScene" id=25]
 [ext_resource path="res://meshes/cursorMaterial.tres" type="Material" id=26]
-[ext_resource path="res://meshes/factoryPreview.tscn" type="PackedScene" id=27]
-[ext_resource path="res://buildingController.gd" type="Script" id=28]
-[ext_resource path="res://meshes/factory.tscn" type="PackedScene" id=29]
+[ext_resource path="res://supportScenes/factoryPreview.tscn" type="PackedScene" id=27]
+[ext_resource path="res://scripts/buildingController.gd" type="Script" id=28]
+[ext_resource path="res://supportScenes/factory.tscn" type="PackedScene" id=29]
+[ext_resource path="res://supportScenes/simpleRoadUpgraded.tscn" type="PackedScene" id=30]
 
-[sub_resource type="PlaneMesh" id=1]
+[sub_resource type="CylinderMesh" id=1]
 
-[sub_resource type="SpatialMaterial" id=2]
-albedo_color = Color( 0.235294, 0.631373, 0.694118, 0.223529 )
-roughness = 0.1
-normal_enabled = true
-normal_scale = 0.3
-normal_texture = ExtResource( 7 )
-refraction_enabled = true
-refraction_scale = 0.01
-refraction_texture_channel = 0
-uv1_scale = Vector3( 20, 20, 1 )
+[sub_resource type="SphereMesh" id=2]
 
-[sub_resource type="Animation" id=3]
-resource_name = "water_movement"
-length = 10.0
-loop = true
-tracks/0/type = "value"
-tracks/0/path = NodePath("waterMesh:material/0:uv1_offset")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/keys = {
-"times": PoolRealArray( 0, 10 ),
-"transitions": PoolRealArray( 1, 1 ),
-"update": 0,
-"values": [ Vector3( 0, 0, 0 ), Vector3( 0, -0.5, 0 ) ]
-}
-
-[sub_resource type="CylinderMesh" id=4]
-
-[sub_resource type="SphereMesh" id=5]
-
-[sub_resource type="CylinderShape" id=6]
+[sub_resource type="CylinderShape" id=3]
 radius = 7.34635
 height = 0.692925
 
-[sub_resource type="CylinderMesh" id=7]
+[sub_resource type="CylinderMesh" id=4]
 
 [node name="main" type="Node"]
 script = ExtResource( 20 )
@@ -76,69 +35,11 @@ script = ExtResource( 20 )
 [node name="gameController" type="Spatial" parent="."]
 script = ExtResource( 21 )
 
-[node name="worldController" type="Spatial" parent="gameController"]
-script = ExtResource( 13 )
-
-[node name="HTerrain" type="Spatial" parent="gameController/worldController"]
-script = ExtResource( 1 )
-ambient_wind = 0.0
-lod_scale = 2.35
-map_scale = Vector3( 1, 1, 1 )
-_terrain_data = ExtResource( 2 )
-chunk_size = 32
-collision_enabled = true
-collision_layer = 1
-collision_mask = 1
-shader_type = "Classic4Lite"
-custom_shader = null
-custom_globalmap_shader = null
-shader_params/u_ground_uv_scale = 10.0
-shader_params/u_depth_blending = true
-shader_params/u_triplanar = false
-shader_params/u_tile_reduction = Plane( 1, 1, 1, 1 )
-ground/albedo_bump_0 = ExtResource( 4 )
-ground/normal_roughness_0 = ExtResource( 6 )
-ground/albedo_bump_1 = ExtResource( 3 )
-ground/normal_roughness_1 = ExtResource( 5 )
-ground/albedo_bump_2 = ExtResource( 8 )
-ground/normal_roughness_2 = ExtResource( 9 )
-ground/albedo_bump_3 = ExtResource( 15 )
-ground/normal_roughness_3 = ExtResource( 16 )
-
-[node name="HTerrainDetailLayer" type="Spatial" parent="gameController/worldController/HTerrain"]
-script = ExtResource( 10 )
-__meta__ = {
-"_editor_icon": ExtResource( 11 )
-}
-layer_index = 0
-texture = ExtResource( 14 )
-view_distance = 400.0
-custom_shader = null
-density = 1.0
-instance_mesh = null
-shader_params/u_globalmap_tint_bottom = null
-shader_params/u_globalmap_tint_top = null
-shader_params/u_bottom_ao = null
-shader_params/u_instance_scale = Vector3( 1, 1, 1 )
-
-[node name="DirectionalLight" type="DirectionalLight" parent="gameController/worldController"]
-transform = Transform( -0.376821, 0.534456, -0.756547, 0.238281, 0.845197, 0.478398, 0.895113, -5.26998e-10, -0.445839, 0, 45.6874, 0 )
-shadow_enabled = true
-
-[node name="waterMesh" type="MeshInstance" parent="gameController/worldController"]
-transform = Transform( 324.818, 0, 0, 0, 1, 0, 0, 0, 362.151, 252.672, 0, 249.625 )
-mesh = SubResource( 1 )
-material/0 = SubResource( 2 )
-
-[node name="waterAnim" type="AnimationPlayer" parent="gameController/worldController"]
-playback_process_mode = 0
-method_call_mode = 1
-anims/water_movement = SubResource( 3 )
-
 [node name="playerController" type="Spatial" parent="gameController"]
 script = ExtResource( 18 )
 singleRoadNode = ExtResource( 19 )
 factoryPreview = ExtResource( 27 )
+residentialPreview = ExtResource( 2 )
 
 [node name="RtsCameraController2" type="Spatial" parent="gameController/playerController"]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 153.977, 6.85095, 127.98 )
@@ -169,12 +70,12 @@ cast_to = Vector3( 0, 0, -40 )
 
 [node name="MeshInstance" type="MeshInstance" parent="gameController/playerController/lever"]
 transform = Transform( 0.1, 0, 0, 0, -8.74228e-07, -0.1, 0, 20, -4.37114e-09, 0, 0, -19.9434 )
-mesh = SubResource( 4 )
+mesh = SubResource( 1 )
 material/0 = null
 
 [node name="collMesh" type="MeshInstance" parent="gameController/playerController"]
 visible = false
-mesh = SubResource( 5 )
+mesh = SubResource( 2 )
 material/0 = null
 
 [node name="roadNodes" type="Spatial" parent="gameController/playerController"]
@@ -222,6 +123,16 @@ margin_left = 31.0
 margin_top = 10.0
 margin_right = 164.0
 margin_bottom = 31.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="btnUpgrade" type="Button" parent="gameController/playerController/pnlRoad"]
+margin_left = 7.4054
+margin_top = 55.4865
+margin_right = 72.4054
+margin_bottom = 75.4865
+text = "Upgrade"
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -294,7 +205,7 @@ follow_focus = true
 scroll_horizontal = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="gameController/playerController/pnlBuilding/ScrollContainer"]
-margin_right = 58.0
+margin_right = 145.0
 margin_bottom = 20.0
 
 [node name="btnFactory" type="Button" parent="gameController/playerController/pnlBuilding/ScrollContainer/HBoxContainer"]
@@ -302,21 +213,40 @@ margin_right = 58.0
 margin_bottom = 20.0
 text = "Factory"
 
+[node name="btnResidential" type="Button" parent="gameController/playerController/pnlBuilding/ScrollContainer/HBoxContainer"]
+margin_left = 62.0
+margin_right = 145.0
+margin_bottom = 20.0
+text = "Residential"
+
+[node name="Button" type="Button" parent="gameController/playerController/pnlBuilding"]
+margin_left = 7.0
+margin_top = 58.0
+margin_right = 71.0
+margin_bottom = 78.0
+text = "Remove"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
 [node name="buildingAreaCursor" type="Area" parent="gameController/playerController"]
 
 [node name="CollisionShape" type="CollisionShape" parent="gameController/playerController/buildingAreaCursor"]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.358865, 0 )
-shape = SubResource( 6 )
+shape = SubResource( 3 )
 
 [node name="MeshInstance" type="MeshInstance" parent="gameController/playerController/buildingAreaCursor"]
 transform = Transform( 3.15765, 0, 0, 0, 0.231034, 0, 0, 0, 3.19156, 0, 0.180204, 0 )
-mesh = SubResource( 7 )
+mesh = SubResource( 4 )
 material/0 = ExtResource( 26 )
+
+[node name="buildingAnchors" type="Spatial" parent="gameController/playerController"]
 
 [node name="roadController" type="Spatial" parent="gameController"]
 script = ExtResource( 17 )
 simpleRoad = ExtResource( 22 )
 roadEnd = ExtResource( 23 )
+upgradedRoad = ExtResource( 30 )
 
 [node name="roadBodies" type="Spatial" parent="gameController/roadController"]
 
@@ -327,8 +257,14 @@ testBody = ExtResource( 25 )
 [node name="buildingController" type="Spatial" parent="gameController"]
 script = ExtResource( 28 )
 buildingFactory = ExtResource( 29 )
+buildingResidential = ExtResource( 3 )
+
+[node name="Server" type="Node" parent="."]
+script = ExtResource( 1 )
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnAddRoad" to="gameController/playerController" method="_on_btnAddRoad_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlRoad/btnRemoveNode" to="gameController/playerController" method="_on_btnRemoveNode_button_up"]
+[connection signal="button_up" from="gameController/playerController/pnlRoad/btnUpgrade" to="gameController/playerController" method="_on_btnUpgrade_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlMode/btnRoadMode" to="gameController/playerController" method="_on_btnRoadMode_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlMode/btnTestPath" to="gameController/playerController" method="_on_btnTestPath_button_up"]
 [connection signal="button_up" from="gameController/playerController/pnlMode/btnBuildingsMode" to="gameController/playerController" method="_on_btnBuildingsMode_button_up"]
+[connection signal="button_up" from="gameController/playerController/pnlBuilding/Button" to="gameController/playerController" method="_on_Button_button_up"]

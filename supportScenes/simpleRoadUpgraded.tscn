@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://meshes/simpleRoad.tres" type="ArrayMesh" id=1]
+
+[sub_resource type="ConvexPolygonShape" id=1]
+points = PoolVector3Array( 0.01, 0.01, 0.00052002, -0.01, 0.01, 0.00052002, -0.01, -0.01, 0.00052002, 0.01, -0.01, 0.00052002, 0.0113064, -0.01, -0.000465479, 0.01, -0.01, 0.00052002, -0.01, -0.01, 0.00052002, -0.0113064, -0.01, -0.000465479, -0.0113064, -0.01, -0.000465479, -0.01, -0.01, 0.00052002, -0.01, 0.01, 0.00052002, -0.0113064, 0.01, -0.000465479, -0.0113064, 0.01, -0.000465479, 0.0113064, 0.01, -0.000465479, 0.0113064, -0.01, -0.000465479, -0.0113064, -0.01, -0.000465479, 0.0113064, 0.01, -0.000465479, 0.01, 0.01, 0.00052002, 0.01, -0.01, 0.00052002, 0.0113064, -0.01, -0.000465479, -0.0113064, 0.01, -0.000465479, -0.01, 0.01, 0.00052002, 0.01, 0.01, 0.00052002, 0.0113064, 0.01, -0.000465479 )
+
+[sub_resource type="CubeMesh" id=2]
+
+[sub_resource type="SpatialMaterial" id=3]
+albedo_color = Color( 0.721569, 0.701961, 0.701961, 1 )
+
+[node name="simpleRoad" type="StaticBody"]
+transform = Transform( 2.433, 0, 0, 0, 7.939, 0, 0, 0, 5, 0, 0.224186, 0 )
+
+[node name="Cube2" type="MeshInstance" parent="."]
+transform = Transform( 36.0651, 0, 0, 0, -1.1999e-05, 66.0268, 0, -100.655, -7.87101e-06, 0, 0, -1 )
+mesh = ExtResource( 1 )
+material/0 = null
+
+[node name="CollisionShape" type="CollisionShape" parent="."]
+transform = Transform( 36.0651, 0, 0, 0, -1.1999e-05, 66.0268, 0, -100.655, -7.87101e-06, 0, 0, -1 )
+shape = SubResource( 1 )
+
+[node name="endPoint" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, -0.999132, -0.0416489, 0, 0.0416489, -0.999132, 0, 0, -1.99939 )
+
+[node name="MeshInstance" type="MeshInstance" parent="."]
+transform = Transform( 0.208491, 0, 0, 0, 0.0410792, 0, 0, 0, 1.01279, -0.558058, 0.0103445, -0.996155 )
+mesh = SubResource( 2 )
+material/0 = SubResource( 3 )
+
+[node name="MeshInstance2" type="MeshInstance" parent="."]
+transform = Transform( 0.208491, 0, 0, 0, 0.0410792, 0, 0, 0, 1.01279, 0.551461, 0.0103445, -0.996155 )
+mesh = SubResource( 2 )
+material/0 = SubResource( 3 )
+
+[node name="1" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.075, -0.5 )
+
+[node name="-1" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.075, -0.5 )
+
+[node name="2" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.075, -1.00372 )
+
+[node name="-2" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.075, -1.00372 )
+
+[node name="3" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.075, -1.58944 )
+
+[node name="-3" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.075, -1.58944 )

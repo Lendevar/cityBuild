@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/asphalt-2-5.jpg-09ee0f4838a084cec19a764bb8deb8b9.stex"
+path="res://.import/asphalt-2-5.jpg-c80d8e0cae8a14280270ef39c3c01508.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://meshes/asphalt-2-5.jpg"
-dest_files=[ "res://.import/asphalt-2-5.jpg-09ee0f4838a084cec19a764bb8deb8b9.stex" ]
+source_file="res://textures/asphalt-2-5.jpg"
+dest_files=[ "res://.import/asphalt-2-5.jpg-c80d8e0cae8a14280270ef39c3c01508.stex" ]
 
 [params]
 

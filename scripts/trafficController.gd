@@ -6,6 +6,8 @@ export (Array) var importedRoadNodes
 
 export (PackedScene) var testBody
 
+
+
 class roadNode:
 	
 	var nodeBody

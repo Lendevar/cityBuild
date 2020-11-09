@@ -27,14 +27,17 @@ class roadNode:
 	var neighbourNodes = []
 	
 
-var buildMode = false
+var arrayAnchors = []
+
+class buildingAnchor:
+	
+	var anchorBody
+	var roadBody
+
+var currentMode = "none"
+
 var currentlyDrawingFrom = 0
 
-var removeMode = false
-
-var testPathFindMode = false
-
-var placingBuildingMode = false
 ####################
 
 var cursorNode
@@ -47,6 +50,7 @@ var importedRoadBodiesArray = []
 signal requestRoadBodyRemoval
 signal requestRoadBodyEndPoint
 
+signal requestRoadUpgrade
 
 var arrayBuildingButtons = []
 
@@ -56,9 +60,33 @@ var materialRed
 var materialGreen
 
 export (PackedScene) var factoryPreview
+export (PackedScene) var residentialPreview
+
+#####################
+
+var t
+var tAnch
+
+func prepareWait(howLong):
+	t.set_wait_time(howLong)
+	t.set_one_shot(true)
+	self.add_child(t)
+	t.start()
+
+func prepareAnchorWait(howLong):
+	tAnch.set_wait_time(howLong)
+	tAnch.set_one_shot(true)
+	self.add_child(tAnch)
+	tAnch.start()
 
 
 func _ready():
+	t = Timer.new()
+	tAnch = Timer.new()
+	
+	t.connect("timeout", self, "switchModeToPlaceBuilding")
+	tAnch.connect("timeout", self, "switchModeToPlaceAnchoredBuilding")
+	##############################
 	
 	materialGreen = SpatialMaterial.new()
 	materialGreen.albedo_color = Color("#00ff70")
@@ -73,6 +101,7 @@ func _ready():
 	#############################
 	
 	arrayBuildingButtons += [$pnlBuilding/ScrollContainer/HBoxContainer/btnFactory]
+	arrayBuildingButtons += [$pnlBuilding/ScrollContainer/HBoxContainer/btnResidential]
 	
 	for i in range(0, arrayBuildingButtons.size()):
 		arrayBuildingButtons[i].connect("button_up", self, "startPlacingABuilding", [arrayBuildingButtons[i].text])
@@ -118,18 +147,34 @@ var nodePositionsForTestPathFind = []
 
 var currentlyPlacing
 
+func switchModeToPlaceBuilding():
+	currentMode = "placeBuilding"
+	t.stop()
+	remove_child(t)
+
+func switchModeToPlaceAnchoredBuilding():
+	currentMode = "placeAnchoredBuilding"
+	tAnch.stop()
+	remove_child(tAnch)
+
+
 func startPlacingABuilding(buildingType):
 	
 	currentlyPlacing = buildingType
 	$buildingAreaCursor.show()
 	
-	placingBuildingMode = true
-	
 	match currentlyPlacing:
 			"Factory":
+				prepareWait(0.05)
 				buildingPreview = factoryPreview.instance()
 				add_child(buildingPreview)
+			
+			"Residential":
+				prepareAnchorWait(0.05)
+				buildingPreview = residentialPreview.instance()
+				add_child(buildingPreview)
 	
+
 
 func nodeHasBeenClicked(id):
 	
@@ -138,10 +183,10 @@ func nodeHasBeenClicked(id):
 	$pnlRoad/lblNeighbours.text = "node " + str(arrayRoadNodes[id])
 	$pnlRoad/lblNeighbours.text += "\r\nneighb " + str(arrayRoadNodes[id].neighbourNodes)
 	
-	if buildMode != true:
+	if currentMode != "buildRoad":
 		currentlyDrawingFrom = id
 	
-	if removeMode == true:
+	if currentMode == "removeRoad":
 		print("removing ", arrayRoadNodes[id])
 		
 		########## Removal might be requested from the server in future multiplayer version
@@ -151,7 +196,7 @@ func nodeHasBeenClicked(id):
 			currentlyDrawingFrom = 0
 		
 	
-	if testPathFindMode == true:
+	if currentMode == "testPathFind":
 		
 		var pos = arrayRoadNodes[id].nodeBody.global_transform.origin 
 		
@@ -163,6 +208,7 @@ func nodeHasBeenClicked(id):
 		
 		pass
 	
+
 
 ############### Turning ray rotation to the click position
 
@@ -186,7 +232,6 @@ var collObj
 ####### Getting collision point and object
 
 func getLmbCollider():
-	
 	if Input.is_action_just_pressed("mouse_left"):   
 		
 		collPoint = $lever/RayCast.get_collision_point() 
@@ -229,11 +274,14 @@ func removeNeighbourByPos(nodePos, neighPos):
 		print("destroyed neighbour relation between ", arrayRoadNodes[firstId], " and ", arrayRoadNodes[secondId])
 	
 
+########################
+
+signal requestBuildingRemoval(obj)
+
 func processClick(pos, obj):
 	
-	#print(pos, obj)
-	
 	var isChecked = false
+	var isRoadBody = false
 	
 	################ Checking if it is a road node
 	
@@ -251,19 +299,44 @@ func processClick(pos, obj):
 	
 	if isChecked == false:
 		for i in range(0, importedRoadBodiesArray.size()):
-			if obj == importedRoadBodiesArray[i] and removeMode == true:
+			if obj == importedRoadBodiesArray[i] and currentMode == "removeRoad":
 				
 				var bodyPos = importedRoadBodiesArray[i].global_transform.origin
 				var endPos = get_node(str(importedRoadBodiesArray[i].get_path()) + "/endPoint").global_transform.origin
+				
+				var arrayAnchorsToRemove = []
+				
+				for j in range(0, arrayAnchors.size()):
+					if arrayAnchors[j].roadBody == obj:
+						arrayAnchorsToRemove += [arrayAnchors[j]]
+						$buildingAnchors.remove_child(arrayAnchors[j].anchorBody)
+					
 				
 				removeNeighbourByPos(bodyPos, endPos)
 				
 				emit_signal("requestRoadBodyRemoval", [bodyPos, endPos])
 				
+				isRoadBody = true
+				
+				for j in range(0, arrayAnchorsToRemove.size()):
+					arrayAnchors.erase(arrayAnchorsToRemove[j])
+				
+				break
+			
+			if obj == importedRoadBodiesArray[i] and currentMode == "upgradeRoad":
+				
+				var bodyPos = importedRoadBodiesArray[i].global_transform.origin
+				var endPos = get_node(str(importedRoadBodiesArray[i].get_path()) + "/endPoint").global_transform.origin
+				
+				emit_signal("requestRoadUpgrade", bodyPos, endPos)
+				
+				isRoadBody = true
+				
 				break
 			
 		
-	
+		if isRoadBody == false and currentMode == "removeBuilding":
+			emit_signal("requestBuildingRemoval", obj)
 
 
 var roadEnd = Vector3()
@@ -330,9 +403,47 @@ var readyToPlaceABuilding = false
 
 var buildingPreview
 
+func calculateNearNodes():
+	
+	if nearestNodeDistance != -1 and nearestNode != null:
+		if placingPoint.distance_to(nearestNode.global_transform.origin) > 9:
+			$buildingAreaCursor.global_transform.origin = placingPoint
+			$buildingAreaCursor/MeshInstance.set_surface_material(0, materialRed)
+			
+			readyToPlaceABuilding = false
+			
+		else:
+			$buildingAreaCursor.global_transform.origin = nearestNode.global_transform.origin
+			$buildingAreaCursor/MeshInstance.set_surface_material(0, materialGreen)
+			
+			readyToPlaceABuilding = true
+			
+	else:
+		$buildingAreaCursor.global_transform.origin = placingPoint
+		$buildingAreaCursor/MeshInstance.set_surface_material(0, materialRed)
+		
+		readyToPlaceABuilding = false
+	
+	
+	if arrayNodeBodiesInArea.size() != 0:
+		for i in range(0, arrayNodeBodiesInArea.size()):
+			
+			var currentDistance = placingPoint.distance_to(arrayNodeBodiesInArea[i].global_transform.origin)
+			
+			arrayDistancesToCursor += [[currentDistance, arrayNodeBodiesInArea[i]]]
+			
+		
+		arrayDistancesToCursor.sort_custom(MyCustomSorter, "sort_ascending")
+		
+		nearestNode = arrayDistancesToCursor[0][1]
+		nearestNodeDistance = arrayDistancesToCursor[0][0]
+	
+
+####################################################
+
 func drawBuildingCursor():
 	
-	if placingBuildingMode == true:
+	if currentMode == "placeBuilding":
 		
 		if mousePosBuildingMode != get_viewport().get_mouse_position():
 			
@@ -357,38 +468,7 @@ func drawBuildingCursor():
 			
 			$buildingAreaCursor.global_transform.origin = placingPoint
 			
-			if nearestNodeDistance != -1 and nearestNode != null:
-				if placingPoint.distance_to(nearestNode.global_transform.origin) > 9:
-					$buildingAreaCursor.global_transform.origin = placingPoint
-					$buildingAreaCursor/MeshInstance.set_surface_material(0, materialRed)
-					
-					readyToPlaceABuilding = false
-					
-				else:
-					$buildingAreaCursor.global_transform.origin = nearestNode.global_transform.origin
-					$buildingAreaCursor/MeshInstance.set_surface_material(0, materialGreen)
-					
-					readyToPlaceABuilding = true
-					
-			else:
-				$buildingAreaCursor.global_transform.origin = placingPoint
-				$buildingAreaCursor/MeshInstance.set_surface_material(0, materialRed)
-				
-				readyToPlaceABuilding = false
-			
-			
-			if arrayNodeBodiesInArea.size() != 0:
-				for i in range(0, arrayNodeBodiesInArea.size()):
-					
-					var currentDistance = placingPoint.distance_to(arrayNodeBodiesInArea[i].global_transform.origin)
-					
-					arrayDistancesToCursor += [[currentDistance, arrayNodeBodiesInArea[i]]]
-					
-				
-				arrayDistancesToCursor.sort_custom(MyCustomSorter, "sort_ascending")
-				
-				nearestNode = arrayDistancesToCursor[0][1]
-				nearestNodeDistance = arrayDistancesToCursor[0][0]
+			calculateNearNodes()
 			
 		
 		if readyToPlaceABuilding == true:
@@ -415,6 +495,71 @@ func drawBuildingCursor():
 		
 		mousePosBuildingMode = get_viewport().get_mouse_position()
 		arrayDistancesToCursor.clear()
+	
+	####################################################
+	
+	if currentMode == "placeAnchoredBuilding":
+		
+		if mousePosBuildingMode != get_viewport().get_mouse_position():
+			
+			mouseMovedBuildingMode = true
+			
+		else:
+			
+			mouseMovedBuildingMode = false
+			
+		
+		camera = $RtsCameraController2/Elevation/Camera
+		var from = camera.project_ray_origin(get_viewport().get_mouse_position())
+		var to = from + camera.project_ray_normal(get_viewport().get_mouse_position()) * ray_length
+		
+		$lever.global_transform.origin = camera.global_transform.origin
+		
+		$lever.look_at(to, Vector3(0,-1,0))
+		
+		placingPoint = $lever/RayCast.get_collision_point()
+		
+		if mouseMovedBuildingMode == true:
+			
+			$buildingAreaCursor.global_transform.origin = placingPoint
+			
+			calculateNearNodes()
+			
+		
+		if readyToPlaceABuilding == true:
+			
+			buildingPreview.show()
+			
+			buildingPreview.global_transform.origin = nearestNode.global_transform.origin
+			
+			for i in range(0, arrayAnchors.size()):
+				
+				var anchorPos = arrayAnchors[i].anchorBody.global_transform.origin
+				
+				if anchorPos == nearestNode.global_transform.origin:
+					for j in range(1, 4):
+						var currentAnchorPlus = get_node(str(arrayAnchors[i].roadBody.get_path())+"/"+str(j))
+						var currentAnchorMinus = get_node(str(arrayAnchors[i].roadBody.get_path())+"/-"+str(j))
+						
+						if anchorPos == currentAnchorPlus.global_transform.origin:
+							buildingPreview.look_at(currentAnchorMinus.global_transform.origin, Vector3(0,1,0))
+						
+						if anchorPos == currentAnchorMinus.global_transform.origin:
+							buildingPreview.look_at(currentAnchorPlus.global_transform.origin, Vector3(0,1,0))
+						
+					
+					break
+				
+			
+			if Input.is_action_just_released("mouse_left"):
+				
+				requestNewAnchoredBuilding()
+			
+		
+		mousePosBuildingMode = get_viewport().get_mouse_position()
+		arrayDistancesToCursor.clear()
+	
+
 
 
 ############################################
@@ -457,32 +602,39 @@ func requestNewBuilding():
 	emit_signal("arrayRoadsChanged", "withEnd", [neighbour.nodeBody.global_transform.origin, entrancePos])
 	
 	buildingPreview.hide()
-	placingBuildingMode = false
+	
+	currentMode = "none"
 	
 	$buildingAreaCursor.global_transform.origin = Vector3(0,0,0)
 
+###############################################################
 
+func requestNewAnchoredBuilding():
+	
+	var previewPos = buildingPreview.global_transform.origin
+	var previewRot = buildingPreview.rotation_degrees
+	
+	previewRot.z = 0
+	previewRot.x = 0
+	
+	emit_signal("requestBuildingPlacement", currentlyPlacing, previewPos, previewRot)
+	
+	buildingPreview.hide()
+	
+	currentMode = "none"
+	
+	$buildingAreaCursor.global_transform.origin = Vector3(0,0,0)
 
-
-
-
-
-
-
+###############################################################
 
 func drawingRoad():
 	
 	if mousePos != get_viewport().get_mouse_position():
-		
 		mouseMoved = true
-		
 	else:
-		
 		mouseMoved = false
-		
 	
-	
-	if buildMode == true and mouseMoved == true:
+	if currentMode == "buildRoad" and mouseMoved == true:
 		
 		camera = $RtsCameraController2/Elevation/Camera
 		var from = camera.project_ray_origin(get_viewport().get_mouse_position())
@@ -555,7 +707,7 @@ func drawingRoad():
 	
 	var storageOfTheStart = arrayRoadNodes[currentlyDrawingFrom]
 	
-	if buildMode == true:
+	if currentMode == "buildRoad":
 		if Input.is_action_just_pressed("mouse_left"):
 			
 			######### If it is a static body, we might check if it is the road Node
@@ -642,7 +794,7 @@ func requestRoadBuild(roadArray):
 				
 		
 	
-	buildMode = false
+	currentMode = "none"
 	
 	for i in range(0, arrayCurrentlyDrawing.size()):
 		
@@ -739,7 +891,7 @@ func requestRoadConnect(roadArray, intersection, start):
 		print("They are already neighbours")
 		
 	
-	buildMode = false
+	currentMode = "none"
 	
 	for i in range(0, arrayCurrentlyDrawing.size()):
 		
@@ -749,6 +901,10 @@ func requestRoadConnect(roadArray, intersection, start):
 	arrayCurrentlyDrawing.clear()
 	
 	emit_signal("readyToSendNodeData", arrayRoadNodes)
+
+##############################################################
+
+
 
 ##############################################################
 
@@ -776,12 +932,24 @@ func requestNodeRemoval(node):
 func processBodyInBuildingCursor(body):
 	
 	if body.get_class() == "StaticBody":
-		for i in range(0, arrayRoadNodes.size()):
-			if body == arrayRoadNodes[i].nodeBody and arrayNodeBodiesInArea.find(body) == -1:
+		if currentMode == "placeBuilding":
+			for i in range(0, arrayRoadNodes.size()):
+				if body == arrayRoadNodes[i].nodeBody and arrayNodeBodiesInArea.find(body) == -1:
+					
+					arrayNodeBodiesInArea += [body]
+					
 				
-				arrayNodeBodiesInArea += [body]
+		
+		if currentMode == "placeAnchoredBuilding":
+			for i in range(0, arrayAnchors.size()):
+				if body == arrayAnchors[i].anchorBody and arrayNodeBodiesInArea.find(body) == -1:
+					
+					arrayNodeBodiesInArea += [body]
+					
 				
 			
+		
+	
 
 func processBodyLeavingCursor(body):
 	
@@ -789,6 +957,23 @@ func processBodyLeavingCursor(body):
 		arrayNodeBodiesInArea.erase(body)
 	
 
+###########################################
+
+func receiveAnchorPoints(anchors, road):
+	for i in range(0, anchors.size()):
+		
+		var newAnchor = buildingAnchor.new()
+		
+		newAnchor.anchorBody = singleRoadNode.instance()
+		$buildingAnchors.add_child(newAnchor.anchorBody)
+		
+		newAnchor.anchorBody.scale *= 0.5
+		newAnchor.anchorBody.global_transform.origin = anchors[i].global_transform.origin
+		
+		newAnchor.roadBody = road
+		
+		arrayAnchors += [newAnchor]
+	
 
 func _physics_process(delta):
 	
@@ -801,27 +986,22 @@ func _physics_process(delta):
 
 func _on_btnAddRoad_button_up():
 	
-	buildMode = true
-	
-	removeMode = false
-	
-
-
+	currentMode = "none"
+	currentMode = "buildRoad"
 
 func _on_btnRemoveNode_button_up():
 	
-	buildMode = false
-	if removeMode == false:
-		removeMode = true
+	if currentMode != "removeRoad":
+		currentMode = "removeRoad"
 		$pnlRoad/btnRemoveNode.text = "X"
 	else:
-		removeMode = false
+		currentMode = "none"
 		$pnlRoad/btnRemoveNode.text = "-"
-	
-	pass # Replace with function body.
 
 func _on_btnRoadMode_button_up():
 	if $pnlRoad.is_visible_in_tree() == false:
+		
+		currentMode = "none"
 		
 		$pnlRoad.show()
 		$roadNodes.show()
@@ -829,10 +1009,7 @@ func _on_btnRoadMode_button_up():
 		
 	else:
 		
-		buildMode = false
-		testPathFindMode = false
-		removeMode = false
-		placingBuildingMode = false
+		currentMode = "none"
 		
 		$pnlRoad.hide()
 		$roadNodes.hide()
@@ -840,12 +1017,9 @@ func _on_btnRoadMode_button_up():
 	
 
 func _on_btnTestPath_button_up():
-	
-	if testPathFindMode == false:
-		testPathFindMode = true
-		buildMode = false
-		removeMode = false
-		placingBuildingMode = false
+	if currentMode != "testPathFind":
+		
+		currentMode = "testPathFind"
 		
 		$buildingAreaCursor.hide()
 		
@@ -853,28 +1027,35 @@ func _on_btnTestPath_button_up():
 		$pnlMode/btnTestPath.text = "Selecting"
 		
 	else:
-		testPathFindMode = false
+		currentMode = "none"
 		nodePositionsForTestPathFind.clear()
-		
 		$pnlMode/btnTestPath.text = "Test path"
-	
-	pass 
+
 
 
 func _on_btnBuildingsMode_button_up():
-	
 	$pnlRoad.hide()
 	
-	buildMode = false
-	removeMode = false
-	testPathFindMode = false
+	currentMode = "none"
 	
 	if $pnlBuilding.is_visible_in_tree() == false:
 		
 		$pnlBuilding.show()
 	else:
 		$pnlBuilding.hide()
+
+
+func _on_Button_button_up():
+	if currentMode != "removeBuilding":
+		currentMode = "removeBuilding"
+	else:
+		currentMode = "none"
+
+
+func _on_btnUpgrade_button_up():
+	if currentMode != "upgradeRoad":
+		currentMode = "upgradeRoad"
+	else:
+		currentMode = "none"
 	
-	
-	
-	pass # Replace with function body.
+

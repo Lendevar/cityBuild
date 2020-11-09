@@ -1,6 +1,7 @@
 extends Spatial
 
 export (PackedScene) var buildingFactory
+export (PackedScene) var buildingResidential
 
 var arrayBuildings = []
 
@@ -21,11 +22,29 @@ func placeBuilding(type, pos, rot):
 	
 	var newBuilding = building.new()
 	
-	newBuilding.buildingBody = buildingFactory.instance()
+	match type:
+		"Factory":
+			newBuilding.buildingBody = buildingFactory.instance()
+		
+		"Residential":
+			newBuilding.buildingBody = buildingResidential.instance()
+	
 	add_child(newBuilding.buildingBody)
 	newBuilding.buildingBody.global_transform.origin = pos
 	newBuilding.buildingBody.rotation_degrees = rot
 	
 	arrayBuildings += [newBuilding]
+
+func checkIfBuildingForRemoval(obj):
+	for i in range(0, arrayBuildings.size()):
+		if arrayBuildings[i].buildingBody == obj:
+			arrayBuildings.erase(arrayBuildings[i])
+			
+			remove_child(obj)
+			
+			break
+		
+	
+
 
 

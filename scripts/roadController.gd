@@ -3,10 +3,14 @@ extends Spatial
 export (PackedScene) var simpleRoad
 export (PackedScene) var roadEnd
 
+export (PackedScene) var upgradedRoad
+
 export (Array) var roadBodies
 export (Array) var roadEnds
 
 signal roadBodyHasBeenPlaced
+
+signal transmitAnchorPoints(anchors, road)
 
 func _ready():
 	
@@ -148,5 +152,43 @@ func bodyRemoval(positions):
 		
 	
 
-
+func upgradeRoad(start, end):
+	
+	var flooredStart = Vector3(floor(start.x),floor(start.y),floor(start.z))
+	var flooredEnd = Vector3(floor(end.x),floor(end.y),floor(end.z))
+	
+	for i in range(0, roadBodies.size()):
+		
+		var bodyStart = roadBodies[i].global_transform.origin
+		var bodyEnd = get_node(str(roadBodies[i].get_path()) + "/endPoint").global_transform.origin
+		
+		var flooredBodyStart = Vector3(floor(bodyStart.x),floor(bodyStart.y),floor(bodyStart.z))
+		var flooredBodyEnd = Vector3(floor(bodyEnd.x),floor(bodyEnd.y),floor(bodyEnd.z))
+		
+		if flooredStart == flooredBodyStart and flooredEnd == flooredBodyEnd:
+			
+			var roadScale = roadBodies[i].scale
+			var rot = roadBodies[i].rotation
+			
+			$roadBodies.remove_child(roadBodies[i])
+			
+			roadBodies[i] = upgradedRoad.instance()
+			
+			$roadBodies.add_child(roadBodies[i])
+			
+			roadBodies[i].global_transform.origin = bodyStart
+			roadBodies[i].rotation = rot
+			roadBodies[i].scale = roadScale
+			get_node(str(roadBodies[i].get_path()) + "/endPoint").global_transform.origin = bodyEnd
+			
+			var arrayAnchors = []
+			
+			for a in range(1,4):
+				arrayAnchors += [get_node(str(roadBodies[i].get_path()) + "/" + str(a))]
+				arrayAnchors += [get_node(str(roadBodies[i].get_path()) + "/-" + str(a))]
+			
+			emit_signal("transmitAnchorPoints", arrayAnchors, roadBodies[i])
+			
+		
+	
 
